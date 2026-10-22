@@ -1,6 +1,6 @@
 Name: libformula
 Version: 1.1.3
-Release: 18%{?dist}
+Release: 20%{?dist}
 Summary: Formula Parser
 License: LGPLv2
 Group: System Environment/Libraries
@@ -9,10 +9,15 @@ Group: System Environment/Libraries
 #to simplify the licensing
 Source: %{name}-%{version}-jarsdeleted.zip
 URL: http://reporting.pentaho.org/
-BuildRequires: ant, ant-contrib, java-devel, jpackage-utils, libbase >= 1.1.3
-Requires: java-headless, jpackage-utils, apache-commons-logging, libbase >= 1.1.3
+BuildRequires: ant, ant-contrib, java-21-openjdk-devel, jpackage-utils, libbase >= 1.1.3
+Requires: java-21-openjdk-headless >= 1:21, jpackage-utils, libbase >= 1.1.3
 BuildArch: noarch
+
+%global java_home /usr/lib/jvm/java-21-openjdk
+
 Patch0: libformula-1.1.2.build.patch
+Patch1: libformula-1.1.2.java11.patch
+Patch2: libformula-1.1.3-remove-commons-logging.patch
 
 %description
 LibFormula provides Excel-Style-Expressions. The implementation provided
@@ -31,13 +36,16 @@ Javadoc for %{name}.
 %prep
 %setup -q -c
 %patch0 -p1 -b .build
+%patch1 -p1 -b .java11
+%patch2 -p1 -b .no_commons_logging
 find . -name "*.jar" -exec rm -f {} \;
 mkdir -p lib
-build-jar-repository -s -p lib commons-logging-api libbase
+build-jar-repository -s -p lib libbase
 cd lib
-ln -s %{_javadir}/ant ant-contrib
+ln -s /usr/share/java/ant ant-contrib
 
 %build
+export JAVA_HOME=%{java_home}
 ant jar javadoc
 
 %install
@@ -55,6 +63,15 @@ cp -rp bin/javadoc/docs/api $RPM_BUILD_ROOT%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
+* Mon Oct 19 2026 Tomas Popela <tpopela@redhat.com> - 1.1.3-20
+- Remove commons logging dependency
+- Related: RHEL-286491
+
+* Tue Oct 06 2026 Tomas Popela <tpopela@redhat.com> - 1.1.3-19
+- OpenJDK 8 won't be supported anymore on RHEL 8 starting from November 2026,
+  move to OpenJDK 21
+- Resolves: RHEL-275419
+
 * Wed Feb 07 2018 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.3-18
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
 
